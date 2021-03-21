@@ -19,5 +19,10 @@ jobs:
         java-version: 1.11
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
-    - name: Build with Gradle
+    - name: Gradle lint
+      run: ./gradlew lintDebug lintFixDebug 
+    - name: Gradle build
       run: ./gradlew build
+    - name: Gradle unit test
+      run: ./gradlew build check testDebugUnitTest
+
