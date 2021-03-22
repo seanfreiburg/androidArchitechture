@@ -1,12 +1,20 @@
 package com.sf.architecture.workflow
 
+import com.sf.architecture.domain.MessageService
 import com.sf.architecture.ui.HelloScreen
+import com.sf.architecture.workflow.HelloWorkflow.*
 import com.squareup.workflow1.Snapshot
 import com.squareup.workflow1.StatefulWorkflow
+import com.squareup.workflow1.Worker
+import com.squareup.workflow1.WorkflowAction.Companion.emitOutput
 import com.squareup.workflow1.action
+import com.squareup.workflow1.onWorkerOutput
 import com.squareup.workflow1.parse
+import com.squareup.workflow1.runningWorker
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 
-object HelloWorkflow : StatefulWorkflow<Unit, HelloWorkflow.State, Nothing, HelloScreen>() {
+class HelloWorkflow(private val messageWorker: Worker<State>) : StatefulWorkflow<Unit, State, Nothing, HelloScreen>() {
     enum class State {
         Hello,
         Goodbye
@@ -23,6 +31,11 @@ object HelloWorkflow : StatefulWorkflow<Unit, HelloWorkflow.State, Nothing, Hell
         renderState: State,
         context: RenderContext
     ): HelloScreen {
+
+        context.runningWorker(messageWorker) {
+                time -> helloAction
+        }
+
         return HelloScreen(
             message = renderState.name,
             onClick = { context.actionSink.send(helloAction) }
