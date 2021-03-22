@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -32,6 +33,6 @@ class RealMessageService : MessageService {
 
 class FakeMessageService : MessageService {
     override val message: Flow<HelloWorkflow.State>
-        get() = TODO("Not yet implemented")
+        get() = flowOf(HelloWorkflow.State.Hello)
 
 }
