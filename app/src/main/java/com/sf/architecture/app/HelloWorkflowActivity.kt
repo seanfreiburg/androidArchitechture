@@ -6,8 +6,10 @@ import androidx.activity.viewModels
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sf.architecture.domain.RealMessageService
 import com.sf.architecture.ui.HelloScreen
 import com.sf.architecture.workflow.HelloWorkflow
+import com.squareup.workflow1.asWorker
 import com.squareup.workflow1.ui.WorkflowLayout
 import com.squareup.workflow1.ui.WorkflowUiExperimentalApi
 import com.squareup.workflow1.ui.renderWorkflowIn
@@ -32,7 +34,7 @@ class HelloViewModel(savedState: SavedStateHandle) : ViewModel() {
     @OptIn(WorkflowUiExperimentalApi::class)
     val renderings: StateFlow<HelloScreen> by lazy {
         renderWorkflowIn(
-            workflow = HelloWorkflow,
+            workflow = HelloWorkflow(RealMessageService().messageStateFlow.asWorker()),
             scope = viewModelScope,
             savedStateHandle = savedState
         )

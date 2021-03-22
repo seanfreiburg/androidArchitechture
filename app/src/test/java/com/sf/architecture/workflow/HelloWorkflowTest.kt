@@ -1,8 +1,10 @@
 package com.sf.architecture.workflow
 
 import com.google.common.truth.Truth.assertThat
+import com.sf.architecture.domain.FakeMessageService
 import com.sf.architecture.workflow.HelloWorkflow.State.*
 import com.squareup.workflow1.Snapshot
+import com.squareup.workflow1.asWorker
 import com.squareup.workflow1.testing.testRender
 import org.junit.Before
 import org.junit.Test
@@ -10,9 +12,11 @@ import org.junit.Test
 
 class HelloWorkflowTest {
 
+    val testObject = HelloWorkflow(FakeMessageService().message.asWorker())
+
     @Test
     fun `testInitialState when snapshot is null`() {
-        val initialState = HelloWorkflow.initialState(
+        val initialState = testObject.initialState(
             Unit,
             null
         )
@@ -22,7 +26,7 @@ class HelloWorkflowTest {
 
     @Test
     fun `testInitialState when snapshot is Hello`() {
-        val initialState = HelloWorkflow.initialState(
+        val initialState = testObject.initialState(
             Unit,
             Snapshot.Companion.of(1)
         )
@@ -32,7 +36,7 @@ class HelloWorkflowTest {
 
     @Test
     fun `testInitialState when snapshot is Goodbye`() {
-        val initialState = HelloWorkflow.initialState(
+        val initialState = testObject.initialState(
             Unit,
             Snapshot.Companion.of(0)
         )
@@ -42,7 +46,7 @@ class HelloWorkflowTest {
 
     @Test
     fun `testRender when onClick then state Hello to Goodbye`() {
-        val testRender = HelloWorkflow.testRender(Unit, Hello)
+        val testRender = testObject.testRender(Unit, Hello)
         testRender.render { rendering ->
             rendering.onClick()
         }.verifyActionResult { newState, output ->
@@ -53,7 +57,7 @@ class HelloWorkflowTest {
 
     @Test
     fun `testRender when onClick then state Goodbye to Hello`() {
-        val testRender = HelloWorkflow.testRender(Unit, Goodbye)
+        val testRender = testObject.testRender(Unit, Goodbye)
         testRender.render { rendering ->
             rendering.onClick()
         }.verifyActionResult { newState, output ->
@@ -64,14 +68,14 @@ class HelloWorkflowTest {
 
     @Test
     fun testSnapshotStateHello() {
-        val snapshot = HelloWorkflow.snapshotState(Hello)
+        val snapshot = testObject.snapshotState(Hello)
 
         assertThat(snapshot).isEqualTo(Snapshot.of(1))
     }
 
     @Test
     fun testSnapshotStateGoodbye() {
-        val snapshot = HelloWorkflow.snapshotState(Goodbye)
+        val snapshot = testObject.snapshotState(Goodbye)
 
         assertThat(snapshot).isEqualTo(Snapshot.of(0))
     }
