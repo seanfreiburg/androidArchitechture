@@ -30,12 +30,12 @@ fun ComposeHomeScreen(
     onClick: () -> Unit) {
     ArchitectureTheme {
         Column {
-            Row() {
+            Row {
                 Text(text = message)
             }
-            Row() {
+            Row {
                 Button(onClick = onClick) {
-                    Text(text = "click ne")
+                    Text(text = "click me")
                 }
             }
         }
