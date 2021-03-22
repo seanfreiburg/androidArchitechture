@@ -1,4 +1,4 @@
-package com.sf.architecture.ui
+package com.sf.architecture.lib
 
 import android.content.Context
 import android.view.View

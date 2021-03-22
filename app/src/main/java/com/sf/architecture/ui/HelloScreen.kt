@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.tooling.preview.Preview
+import com.sf.architecture.lib.ComposeViewFactory
 import com.sf.architecture.ui.theme.ArchitectureTheme
 import com.squareup.workflow1.ui.AndroidViewRendering
 import com.squareup.workflow1.ui.ViewEnvironment
