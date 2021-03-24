@@ -1,82 +1,114 @@
 package com.sf.architecture.workflow
 
 import com.google.common.truth.Truth.assertThat
-import com.sf.architecture.domain.FakeMessageService
-import com.sf.architecture.workflow.HelloWorkflow.State.*
-import com.squareup.workflow1.Snapshot
-import com.squareup.workflow1.asWorker
+import com.sf.architecture.domain.FakeMessageUseCase
+import com.sf.architecture.domain.MessageState
+import com.sf.architecture.workflow.HelloWorkflow.State
+import com.sf.architecture.workflow.HelloWorkflow.State.Loaded
+import com.squareup.workflow1.testing.expectWorker
 import com.squareup.workflow1.testing.testRender
-import org.junit.Before
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Test
 
-
+@ExperimentalCoroutinesApi
 class HelloWorkflowTest {
 
-    val testObject = HelloWorkflow(FakeMessageService().message.asWorker())
+    private val fakeMessageUseCase = FakeMessageUseCase()
+    private val testObject = HelloWorkflow(
+        GetMessageWorker(fakeMessageUseCase),
+        InvertMessageWorker(fakeMessageUseCase)
+    )
 
+
+    // snapshot
     @Test
-    fun `testInitialState when snapshot is null`() {
+    fun `testInitialState when snapshot is Loading`() {
         val initialState = testObject.initialState(
             Unit,
             null
         )
 
-        assertThat(initialState).isEqualTo(Hello)
+        assertThat(initialState).isEqualTo(State.Loading)
     }
 
     @Test
-    fun `testInitialState when snapshot is Hello`() {
-        val initialState = testObject.initialState(
-            Unit,
-            Snapshot.Companion.of(1)
+    fun testSnapshotStateNull() {
+        val snapshot = testObject.snapshotState(Loaded(MessageState.Hello))
+
+        assertThat(snapshot).isEqualTo(null)
+    }
+
+    // test render
+    @Test
+    fun `testRender when Loading then message and worker are correct`() {
+        val testRender = testObject.testRender(Unit, State.Loading)
+
+        testRender.render {
+            assertThat(it.message).isEqualTo("Loading...")
+        }
+
+        testRender.expectWorker(
+            workerClass = GetMessageWorker::class,
+            key = "message"
         )
-
-        assertThat(initialState).isEqualTo(Hello)
     }
 
     @Test
-    fun `testInitialState when snapshot is Goodbye`() {
-        val initialState = testObject.initialState(
-            Unit,
-            Snapshot.Companion.of(0)
+    fun `testRender when in state Inverting then message and worker are correct`() {
+        val testRender = testObject.testRender(Unit, State.Inverting)
+
+        testRender.render {
+            assertThat(it.message).isEqualTo("Inverting...")
+        }
+
+        testRender.expectWorker(
+            workerClass = InvertMessageWorker::class,
+            key = "invert"
         )
-
-        assertThat(initialState).isEqualTo(Goodbye)
     }
 
     @Test
-    fun `testRender when onClick then state Hello to Goodbye`() {
-        val testRender = testObject.testRender(Unit, Hello)
-        testRender.render { rendering ->
+    fun `testRender when in state Loaded then message and worker are correct`() {
+        val testRender = testObject.testRender(Unit, Loaded(MessageState.Hello))
+
+        testRender.render {
+            assertThat(it.message).isEqualTo("Hello")
+        }
+
+        testRender.expectWorker(
+            workerClass = GetMessageWorker::class,
+            key = "message"
+        )
+    }
+
+    // actions
+
+    @Test
+    fun `action when onClick then state to Inverting`() {
+        val testRender = testObject.testRender(Unit, Loaded(MessageState.Hello))
+        val render = testRender.render { rendering ->
             rendering.onClick()
-        }.verifyActionResult { newState, output ->
-            assertThat(newState).isEqualTo(Goodbye)
+        }
+
+        render.verifyAction { action ->
+            assertThat(action).isEqualTo(HelloWorkflow.Action.OnClick)
+        }
+        render.verifyActionResult { newState, output ->
+            assertThat(newState).isEqualTo(State.Inverting)
             assertThat(output).isNull()
         }
     }
 
+    // reducer
     @Test
-    fun `testRender when onClick then state Goodbye to Hello`() {
-        val testRender = testObject.testRender(Unit, Goodbye)
-        testRender.render { rendering ->
-            rendering.onClick()
-        }.verifyActionResult { newState, output ->
-            assertThat(newState).isEqualTo(Hello)
-            assertThat(output).isNull()
-        }
+    fun `reducer when OnMessageUpdate then state to Loaded`() {
+        val newState = HelloWorkflow.Action.reduce(HelloWorkflow.Action.OnMessageUpdate(MessageState.Hello))
+        assertThat(newState).isEqualTo(Loaded(MessageState.Hello))
     }
 
     @Test
-    fun testSnapshotStateHello() {
-        val snapshot = testObject.snapshotState(Hello)
-
-        assertThat(snapshot).isEqualTo(Snapshot.of(1))
-    }
-
-    @Test
-    fun testSnapshotStateGoodbye() {
-        val snapshot = testObject.snapshotState(Goodbye)
-
-        assertThat(snapshot).isEqualTo(Snapshot.of(0))
+    fun `reducer when OnClick then state to Inverting`() {
+        val newState = HelloWorkflow.Action.reduce(HelloWorkflow.Action.OnClick)
+        assertThat(newState).isEqualTo(State.Inverting)
     }
 }

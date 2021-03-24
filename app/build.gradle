@@ -74,6 +74,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation "com.squareup.workflow1:workflow-testing-jvm:1.0.0-alpha.12"
     testImplementation "com.google.truth:truth:1.1.2"
+    testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.3'
 
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
