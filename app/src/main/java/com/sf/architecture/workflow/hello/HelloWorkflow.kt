@@ -1,8 +1,8 @@
-package com.sf.architecture.workflow
+package com.sf.architecture.workflow.hello
 
 import com.sf.architecture.domain.MessageState
 import com.sf.architecture.ui.HelloScreen
-import com.sf.architecture.workflow.HelloWorkflow.State
+import com.sf.architecture.workflow.hello.HelloWorkflow.State
 import com.squareup.workflow1.Snapshot
 import com.squareup.workflow1.StatefulWorkflow
 import com.squareup.workflow1.WorkflowAction
@@ -13,7 +13,7 @@ class HelloWorkflow(
     private val invertMessageWorker: InvertMessageWorker
 ) : StatefulWorkflow<Unit, State, Nothing, HelloScreen>() {
 
-    sealed class State() {
+    sealed class State {
         object Loading : State()
         data class Loaded(val messageState: MessageState) : State()
         object Inverting : State()

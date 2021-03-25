@@ -3,8 +3,11 @@ package com.sf.architecture.workflow
 import com.google.common.truth.Truth.assertThat
 import com.sf.architecture.domain.FakeMessageUseCase
 import com.sf.architecture.domain.MessageState
-import com.sf.architecture.workflow.HelloWorkflow.State
-import com.sf.architecture.workflow.HelloWorkflow.State.Loaded
+import com.sf.architecture.workflow.hello.GetMessageWorker
+import com.sf.architecture.workflow.hello.HelloWorkflow
+import com.sf.architecture.workflow.hello.HelloWorkflow.State
+import com.sf.architecture.workflow.hello.HelloWorkflow.State.Loaded
+import com.sf.architecture.workflow.hello.InvertMessageWorker
 import com.squareup.workflow1.testing.expectWorker
 import com.squareup.workflow1.testing.testRender
 import kotlinx.coroutines.ExperimentalCoroutinesApi
