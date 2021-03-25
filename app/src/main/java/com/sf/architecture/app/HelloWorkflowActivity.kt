@@ -10,10 +10,10 @@ import com.sf.architecture.data.FakeMessageDatabase
 import com.sf.architecture.data.FakeMessageNetwork
 import com.sf.architecture.domain.RealMessageUseCase
 import com.sf.architecture.repo.RealMessageRepo
-import com.sf.architecture.ui.HelloScreen
-import com.sf.architecture.workflow.GetMessageWorker
-import com.sf.architecture.workflow.HelloWorkflow
-import com.sf.architecture.workflow.InvertMessageWorker
+import com.sf.architecture.workflow.hello.GetMessageWorker
+import com.sf.architecture.workflow.hello.InvertMessageWorker
+import com.sf.architecture.workflow.root.GetAuthWorker
+import com.sf.architecture.workflow.root.RootWorkflow
 import com.squareup.workflow1.ui.WorkflowLayout
 import com.squareup.workflow1.ui.WorkflowUiExperimentalApi
 import com.squareup.workflow1.ui.renderWorkflowIn
@@ -27,16 +27,16 @@ class HelloWorkflowActivity : ComponentActivity() {
         // This ViewModel will survive configuration changes. It's instantiated
         // by the first call to viewModels(), and that original instance is returned by
         // succeeding calls.
-        val model: HelloViewModel by viewModels()
+        val model: RootViewModel by viewModels()
         setContentView(
             WorkflowLayout(this).apply { start(model.renderings) }
         )
     }
 }
 
-class HelloViewModel(savedState: SavedStateHandle) : ViewModel() {
+class RootViewModel(savedState: SavedStateHandle) : ViewModel() {
     @OptIn(WorkflowUiExperimentalApi::class)
-    val renderings: StateFlow<HelloScreen> by lazy {
+    val renderings: StateFlow<Any> by lazy {
         val useCase = RealMessageUseCase(
             RealMessageRepo(
                 viewModelScope,
@@ -46,10 +46,7 @@ class HelloViewModel(savedState: SavedStateHandle) : ViewModel() {
         )
 
         renderWorkflowIn(
-            workflow = HelloWorkflow(
-                GetMessageWorker(useCase),
-                InvertMessageWorker(useCase)
-            ),
+            workflow = RootWorkflow(viewModelScope, GetAuthWorker(), GetMessageWorker(useCase), InvertMessageWorker(useCase)),
             scope = viewModelScope,
             savedStateHandle = savedState
         )

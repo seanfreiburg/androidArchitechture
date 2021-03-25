@@ -1,4 +1,4 @@
-package com.sf.architecture.workflow
+package com.sf.architecture.workflow.hello
 
 import com.sf.architecture.domain.MessageState
 import com.sf.architecture.domain.MessageUseCase
