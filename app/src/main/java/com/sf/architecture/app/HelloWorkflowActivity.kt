@@ -6,10 +6,14 @@ import androidx.activity.viewModels
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sf.architecture.domain.RealMessageService
+import com.sf.architecture.data.FakeMessageDatabase
+import com.sf.architecture.data.FakeMessageNetwork
+import com.sf.architecture.domain.RealMessageUseCase
+import com.sf.architecture.repo.RealMessageRepo
 import com.sf.architecture.ui.HelloScreen
+import com.sf.architecture.workflow.GetMessageWorker
 import com.sf.architecture.workflow.HelloWorkflow
-import com.squareup.workflow1.asWorker
+import com.sf.architecture.workflow.InvertMessageWorker
 import com.squareup.workflow1.ui.WorkflowLayout
 import com.squareup.workflow1.ui.WorkflowUiExperimentalApi
 import com.squareup.workflow1.ui.renderWorkflowIn
@@ -33,8 +37,19 @@ class HelloWorkflowActivity : ComponentActivity() {
 class HelloViewModel(savedState: SavedStateHandle) : ViewModel() {
     @OptIn(WorkflowUiExperimentalApi::class)
     val renderings: StateFlow<HelloScreen> by lazy {
+        val useCase = RealMessageUseCase(
+            RealMessageRepo(
+                viewModelScope,
+                FakeMessageNetwork(),
+                FakeMessageDatabase()
+            )
+        )
+
         renderWorkflowIn(
-            workflow = HelloWorkflow(RealMessageService().messageStateFlow.asWorker()),
+            workflow = HelloWorkflow(
+                GetMessageWorker(useCase),
+                InvertMessageWorker(useCase)
+            ),
             scope = viewModelScope,
             savedStateHandle = savedState
         )

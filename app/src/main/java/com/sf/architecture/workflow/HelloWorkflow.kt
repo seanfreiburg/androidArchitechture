@@ -1,30 +1,46 @@
 package com.sf.architecture.workflow
 
-import com.sf.architecture.domain.MessageService
+import com.sf.architecture.domain.MessageState
 import com.sf.architecture.ui.HelloScreen
-import com.sf.architecture.workflow.HelloWorkflow.*
+import com.sf.architecture.workflow.HelloWorkflow.State
 import com.squareup.workflow1.Snapshot
 import com.squareup.workflow1.StatefulWorkflow
-import com.squareup.workflow1.Worker
-import com.squareup.workflow1.WorkflowAction.Companion.emitOutput
-import com.squareup.workflow1.action
-import com.squareup.workflow1.onWorkerOutput
-import com.squareup.workflow1.parse
+import com.squareup.workflow1.WorkflowAction
 import com.squareup.workflow1.runningWorker
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 
-class HelloWorkflow(private val messageWorker: Worker<State>) : StatefulWorkflow<Unit, State, Nothing, HelloScreen>() {
-    enum class State {
-        Hello,
-        Goodbye
+class HelloWorkflow(
+    private val getMessageWorker: GetMessageWorker,
+    private val invertMessageWorker: InvertMessageWorker
+) : StatefulWorkflow<Unit, State, Nothing, HelloScreen>() {
+
+    sealed class State() {
+        object Loading : State()
+        data class Loaded(val messageState: MessageState) : State()
+        object Inverting : State()
+    }
+
+    sealed class Action : WorkflowAction<Unit, State, Nothing>() {
+        object OnClick : Action()
+        class OnMessageUpdate(val messageState: MessageState): Action()
+
+        override fun Updater.apply() {
+            state = reduce(this@Action)
+        }
+
+        companion object {
+            fun reduce(action: Action): State {
+                return when (action) {
+                    OnClick -> State.Inverting
+                    is OnMessageUpdate -> State.Loaded(action.messageState)
+                }
+            }
+        }
     }
 
     override fun initialState(
         props: Unit,
         snapshot: Snapshot?
-    ): State = snapshot?.bytes?.parse { source -> if (source.readInt() == 1) State.Hello else State.Goodbye }
-        ?: State.Hello
+    ): State = State.Loading
 
     override fun render(
         renderProps: Unit,
@@ -32,23 +48,39 @@ class HelloWorkflow(private val messageWorker: Worker<State>) : StatefulWorkflow
         context: RenderContext
     ): HelloScreen {
 
-        context.runningWorker(messageWorker) {
-                time -> helloAction
+        // always listen for updates
+        context.runningWorker(getMessageWorker, "message") {
+            Action.OnMessageUpdate(it)
         }
 
-        return HelloScreen(
-            message = renderState.name,
-            onClick = { context.actionSink.send(helloAction) }
-        )
-    }
+        val onClick = { context.actionSink.send(Action.OnClick) }
 
-    override fun snapshotState(state: State): Snapshot =
-        Snapshot.of(if (state == State.Hello) 1 else 0)
+        when (renderState) {
+            State.Loading -> {
+                return HelloScreen(
+                    message = "Loading...",
+                    onClick = onClick
+                )
+            }
+            is State.Loaded -> {
+                return HelloScreen(
+                    message = renderState.messageState.name,
+                    onClick = onClick
+                )
+            }
+            is State.Inverting -> {
+                context.runningWorker(invertMessageWorker, "invert") {
+                    Action.OnMessageUpdate(it)
+                }
 
-    private val helloAction = action {
-        state = when (state) {
-            State.Hello -> State.Goodbye
-            State.Goodbye -> State.Hello
+                return HelloScreen(
+                    message = "Inverting...",
+                    onClick = onClick
+                )
+            }
         }
     }
+
+    override fun snapshotState(state: State): Snapshot? = null
 }
+
