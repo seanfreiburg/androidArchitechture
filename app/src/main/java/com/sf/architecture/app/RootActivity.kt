@@ -20,8 +20,9 @@ import com.squareup.workflow1.ui.renderWorkflowIn
 import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(WorkflowUiExperimentalApi::class)
-class HelloWorkflowActivity : ComponentActivity() {
+class RootActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        (applicationContext as RootApplication).appComponent.inject(this)
         super.onCreate(savedInstanceState)
 
         // This ViewModel will survive configuration changes. It's instantiated
