@@ -2,56 +2,60 @@ package com.sf.architecture.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.viewModels
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.sf.architecture.data.FakeMessageDatabase
-import com.sf.architecture.data.FakeMessageNetwork
-import com.sf.architecture.domain.RealMessageUseCase
-import com.sf.architecture.repo.RealMessageRepo
-import com.sf.architecture.workflow.hello.GetMessageWorker
-import com.sf.architecture.workflow.hello.InvertMessageWorker
-import com.sf.architecture.workflow.root.GetAuthWorker
-import com.sf.architecture.workflow.root.RootWorkflow
-import com.squareup.workflow1.ui.WorkflowLayout
-import com.squareup.workflow1.ui.WorkflowUiExperimentalApi
-import com.squareup.workflow1.ui.renderWorkflowIn
-import kotlinx.coroutines.flow.StateFlow
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import app.cash.molecule.AndroidUiDispatcher
+import app.cash.molecule.launchMolecule
+import com.sf.architecture.app.ui.theme.AppTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.InternalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
-@OptIn(WorkflowUiExperimentalApi::class)
 class RootActivity : ComponentActivity() {
+    private val scope = CoroutineScope(AndroidUiDispatcher.Main)
+
+    @OptIn(InternalCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         (applicationContext as RootApplication).appComponent.inject(this)
         super.onCreate(savedInstanceState)
 
-        // This ViewModel will survive configuration changes. It's instantiated
-        // by the first call to viewModels(), and that original instance is returned by
-        // succeeding calls.
-        val model: RootViewModel by viewModels()
-        setContentView(
-            WorkflowLayout(this).apply { start(model.renderings) }
-        )
+        val navigator = RealNavigator(SplashScreen)
+        scope.launch {
+            navigator.screensFlow.collect {
+                val events = MutableSharedFlow<ViewEvent>(0, 50)
+                val view = it.first as MoleculeView<ViewEvent, ViewModel>
+                val presenter = it.second as MoleculePresenter<ViewEvent, ViewModel>
+
+                view.setEventReceiver(events)
+
+                launch {
+                    val models = launchMolecule {
+                        presenter.viewModel(events = events)
+                    }
+                    models.collect { model ->
+                        setContent {
+                            AppTheme {
+                                // A surface container using the 'background' color from the theme
+                                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                                    view.Render(model)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
     }
 }
-
-class RootViewModel(savedState: SavedStateHandle) : ViewModel() {
-    @OptIn(WorkflowUiExperimentalApi::class)
-    val renderings: StateFlow<Any> by lazy {
-        val useCase = RealMessageUseCase(
-            RealMessageRepo(
-                viewModelScope,
-                FakeMessageNetwork(),
-                FakeMessageDatabase()
-            )
-        )
-
-        renderWorkflowIn(
-            workflow = RootWorkflow(viewModelScope, GetAuthWorker(), GetMessageWorker(useCase), InvertMessageWorker(useCase)),
-            scope = viewModelScope,
-            savedStateHandle = savedState
-        )
-    }
-}
-
 

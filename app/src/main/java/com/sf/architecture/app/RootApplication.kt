@@ -12,5 +12,5 @@ interface ApplicationComponent {
 
 class RootApplication: Application() {
     // Reference to the application graph that is used across the whole app
-    val appComponent = DaggerApplicationComponent.create()
+    val appComponent: ApplicationComponent = DaggerApplicationComponent.create()
 }
